@@ -67,15 +67,17 @@ const seedComments = async (issues: IIssue[], users: IUser[]): Promise<IComment[
 };
 
 // Main seeding function
-const createGuestAccount = async (): Promise<void> => {
+const createGuestAccount = async (): Promise<IUser | null> => {
   try {
     const users = await seedUsers();
     const project = await seedProject(users);
     const issues = await seedIssues(project, users);
     await seedComments(issues, users);
     console.log('Database seeded successfully with guest data.');
+    return users[0];
   } catch (error) {
     console.error('Error seeding the database:', error);
+    return null;
   }
 };
 

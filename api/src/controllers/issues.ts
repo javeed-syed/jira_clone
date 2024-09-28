@@ -1,50 +1,58 @@
-import { Issue } from 'entities';
-import { catchErrors } from 'errors';
-import { updateEntity, deleteEntity, createEntity, findEntityOrThrow } from 'utils/typeorm';
+/* eslint-disable no-underscore-dangle */
+/* eslint-disable @typescript-eslint/no-misused-promises */
+
+import { Comment, IIssue, Issue } from 'entities';
+import { BadUserInputError, EntityNotFoundError, catchErrors } from 'errors';
 
 export const getProjectIssues = catchErrors(async (req, res) => {
-  const { projectId } = req.currentUser;
-  const { searchTerm } = req.query;
-
-  let whereSQL = 'issue.projectId = :projectId';
-
-  if (searchTerm) {
-    whereSQL += ' AND (issue.title ILIKE :searchTerm OR issue.descriptionText ILIKE :searchTerm)';
-  }
-
-  const issues = await Issue.createQueryBuilder('issue')
-    .select()
-    .where(whereSQL, { projectId, searchTerm: `%${searchTerm}%` })
-    .getMany();
-
+  const { _id } = req.currentUser;
+  const issues = await Issue.find({ users: _id });
   res.respond({ issues });
 });
 
 export const getIssueWithUsersAndComments = catchErrors(async (req, res) => {
-  const issue = await findEntityOrThrow(Issue, req.params.issueId, {
-    relations: ['users', 'comments', 'comments.user'],
-  });
+  const { issueId } = req.params;
+  if (!issueId) {
+    throw new BadUserInputError({ issueId });
+  }
+  const issue = await Issue.findOne({ _id: issueId }).populate('users');
+
+  if (issue) {
+    issue.comments = await Comment.find({ issue: issueId });
+  }
   res.respond({ issue });
 });
 
 export const create = catchErrors(async (req, res) => {
   const listPosition = await calculateListPosition(req.body);
-  const issue = await createEntity(Issue, { ...req.body, listPosition });
+  const issue = new Issue({ ...req.body, listPosition });
+  await issue.save();
   res.respond({ issue });
 });
 
 export const update = catchErrors(async (req, res) => {
-  const issue = await updateEntity(Issue, req.params.issueId, req.body);
+  const { issueId } = req.params;
+  if (!issueId) {
+    throw new BadUserInputError({ issueId });
+  }
+  const issue = await Issue.updateOne({ _id: issueId }, req.body);
+  if (!issue) {
+    throw new EntityNotFoundError(Issue.name);
+  }
   res.respond({ issue });
 });
 
 export const remove = catchErrors(async (req, res) => {
-  const issue = await deleteEntity(Issue, req.params.issueId);
+  const { issueId } = req.params;
+  if (!issueId) {
+    throw new BadUserInputError({ issueId });
+  }
+  const issue = await Issue.deleteOne({ _id: issueId });
   res.respond({ issue });
 });
 
-const calculateListPosition = async ({ projectId, status }: Issue): Promise<number> => {
-  const issues = await Issue.find({ projectId, status });
+const calculateListPosition = async ({ _id, status }: IIssue): Promise<number> => {
+  const issues = await Issue.find({ _id, status });
 
   const listPositions = issues.map(({ listPosition }) => listPosition);
 

@@ -1,21 +1,27 @@
-import { Project } from 'entities';
-import { catchErrors } from 'errors';
-import { findEntityOrThrow, updateEntity } from 'utils/typeorm';
-import { issuePartial } from 'serializers/issues';
+/* eslint-disable no-underscore-dangle */
+/* eslint-disable @typescript-eslint/no-misused-promises */
 
-export const getProjectWithUsersAndIssues = catchErrors(async (req, res) => {
-  const project = await findEntityOrThrow(Project, req.currentUser.projectId, {
-    relations: ['users', 'issues'],
-  });
+import { Issue, Project } from 'entities';
+import { BadUserInputError, EntityNotFoundError, catchErrors } from 'errors';
+
+export const getProjectWithUsersAndIssues = catchErrors(async (_, res) => {
+  const project = await Project.findOne().populate('users');
+  if (project) {
+    project.issues = await Issue.find({ project: project._id });
+  }
   res.respond({
-    project: {
-      ...project,
-      issues: project.issues.map(issuePartial),
-    },
+    project,
   });
 });
 
 export const update = catchErrors(async (req, res) => {
-  const project = await updateEntity(Project, req.currentUser.projectId, req.body);
+  const { projectId } = req.params;
+  if (!projectId) {
+    throw new BadUserInputError({ projectId });
+  }
+  const project = await Project.updateOne({ _id: projectId }, req.body);
+  if (!project) {
+    throw new EntityNotFoundError(Project.name);
+  }
   res.respond({ project });
 });
