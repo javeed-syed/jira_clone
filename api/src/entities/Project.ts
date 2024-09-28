@@ -1,12 +1,15 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { ProjectCategory } from 'constants/projects';
 
-// eslint-disable-next-line @typescript-eslint/interface-name-prefix
-export interface IProject extends Document {
+export interface BaseProject {
   name: string;
-  url?: string;
-  description?: string;
+  url: string;
+  description: string;
   category: ProjectCategory;
+}
+
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IProject extends Document, BaseProject {
   issues: mongoose.Types.ObjectId[];
   users: mongoose.Types.ObjectId[];
 }

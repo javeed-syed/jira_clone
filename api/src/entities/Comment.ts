@@ -1,10 +1,12 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-// eslint-disable-next-line @typescript-eslint/interface-name-prefix
-export interface IComment extends Document {
+export interface BaseComment {
   body: string;
-  createdAt: Date;
-  updatedAt: Date;
+}
+
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IComment extends Document, BaseComment {
+  body: string;
   user: mongoose.Types.ObjectId;
   issue: mongoose.Types.ObjectId;
 }

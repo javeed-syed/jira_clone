@@ -1,10 +1,14 @@
+/* eslint-disable no-underscore-dangle */
 import mongoose, { Document, Schema } from 'mongoose';
 
-// eslint-disable-next-line @typescript-eslint/interface-name-prefix
-export interface IUser extends Document {
-  name: string;
+export interface BaseUser {
   email: string;
+  name: string;
   avatarUrl: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IUser extends Document, BaseUser {
   comments: mongoose.Types.ObjectId[];
   issues: mongoose.Types.ObjectId[];
   projects: mongoose.Types.ObjectId[];
@@ -23,7 +27,7 @@ const UserSchema: Schema = new Schema(
       maxlength: 200,
       unique: true,
       validate: {
-        validator(value: string) {
+        validator(value: string): boolean {
           return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
         },
         message: 'Invalid email address format',
@@ -60,12 +64,10 @@ const UserSchema: Schema = new Schema(
 const User = mongoose.model<IUser>('User', UserSchema);
 
 // Mongoose middleware to delete user-related data (issues and comments) when users are deleted.
-UserSchema.pre('deleteMany', async function deleteIssuesAndComments(next) {
+UserSchema.pre('deleteMany', async function deleteIssuesAndComments(next): Promise<void> {
   const conditions = this.getFilter();
   try {
-    // eslint-disable-next-line no-underscore-dangle
     await mongoose.model('Issue').deleteMany({ user: { $in: conditions._id } });
-    // eslint-disable-next-line no-underscore-dangle
     await mongoose.model('Comment').deleteMany({ user: { $in: conditions._id } });
     next();
   } catch (error) {

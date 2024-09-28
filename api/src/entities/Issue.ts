@@ -2,8 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 import striptags from 'striptags';
 import { IssueType, IssueStatus, IssuePriority } from 'constants/issues';
 
-// eslint-disable-next-line @typescript-eslint/interface-name-prefix
-export interface IIssue extends Document {
+export interface BaseIssue {
   title: string;
   type: IssueType;
   status: IssueStatus;
@@ -14,6 +13,10 @@ export interface IIssue extends Document {
   estimate?: number;
   timeSpent?: number;
   timeRemaining?: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IIssue extends Document, BaseIssue {
   reporterId: mongoose.Types.ObjectId;
   project: mongoose.Types.ObjectId;
   comments: mongoose.Types.ObjectId[];

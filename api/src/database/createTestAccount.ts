@@ -1,87 +1,77 @@
-import { Comment, Issue, Project, User } from 'entities';
-import { ProjectCategory } from 'constants/projects';
-import { IssueType, IssueStatus, IssuePriority } from 'constants/issues';
-import { createEntity } from 'utils/typeorm';
+/* eslint-disable no-underscore-dangle */
 
-const seedUsers = (): Promise<User[]> => {
-  const users = [
-    createEntity(User, {
-      email: 'gaben@jira.test',
-      name: 'Gaben',
-      avatarUrl: 'https://i.ibb.co/6RJ5hq6/gaben.jpg',
-    }),
-    createEntity(User, {
-      email: 'yoda@jira.test',
-      name: 'Yoda',
-      avatarUrl: 'https://i.ibb.co/6n0hLML/baby-yoda.jpg',
-    }),
-  ];
-  return Promise.all(users);
+import { TestData } from 'constants/data';
+import {
+  User,
+  Project,
+  Issue,
+  Comment,
+  IUser,
+  IProject,
+  IIssue,
+  IComment,
+  BaseUser,
+  BaseIssue,
+  BaseComment,
+} from '../entities';
+
+const seedUsers = async (): Promise<IUser[]> => {
+  const users = TestData.users.map((userData: BaseUser) => new User(userData));
+  const savedUsers = await User.insertMany(users);
+  return savedUsers;
 };
 
-const seedProject = (users: User[]): Promise<Project> =>
-  createEntity(Project, {
-    name: 'Project name',
-    url: 'https://www.testurl.com',
-    description: 'Project description',
-    category: ProjectCategory.SOFTWARE,
-    users,
-  });
-
-const seedIssues = (project: Project): Promise<Issue[]> => {
-  const { users } = project;
-
-  const issues = [
-    createEntity(Issue, {
-      title: 'Issue title 1',
-      type: IssueType.TASK,
-      status: IssueStatus.BACKLOG,
-      priority: IssuePriority.LOWEST,
-      listPosition: 1,
-      reporterId: users[0].id,
-      project,
-    }),
-    createEntity(Issue, {
-      title: 'Issue title 2',
-      type: IssueType.TASK,
-      status: IssueStatus.BACKLOG,
-      priority: IssuePriority.MEDIUM,
-      listPosition: 2,
-      estimate: 5,
-      description: 'Issue description 2',
-      reporterId: users[0].id,
-      users: [users[0]],
-      project,
-    }),
-    createEntity(Issue, {
-      title: 'Issue title 3',
-      type: IssueType.STORY,
-      status: IssueStatus.SELECTED,
-      priority: IssuePriority.HIGH,
-      listPosition: 3,
-      estimate: 10,
-      description: 'Issue description 3',
-      reporterId: users[0].id,
-      users: [users[0], users[1]],
-      project,
-    }),
-  ];
-  return Promise.all(issues);
+const seedProject = async (users: IUser[]): Promise<IProject> => {
+  const projectData = {
+    ...TestData.project,
+    users: users.map((user: IUser) => user._id),
+  };
+  const project = new Project(projectData);
+  const savedProject = await project.save();
+  return savedProject;
 };
 
-const seedComments = (issue: Issue, user: User): Promise<Comment> =>
-  createEntity(Comment, {
-    body: 'Comment body',
-    issueId: issue.id,
-    userId: user.id,
+const seedIssues = async (project: IProject, users: IUser[]): Promise<IIssue[]> => {
+  const issues = TestData.issues.map((issueData: BaseIssue, index: number) => {
+    const reporterId = users[0]._id;
+    const assignees = index === 2 ? [users[0]._id, users[1]._id] : [users[0]._id];
+
+    return new Issue({
+      ...issueData,
+      reporter: reporterId,
+      users: assignees,
+      project: project._id, // Link the project by its ObjectId
+    });
   });
 
-const createTestAccount = async (): Promise<User> => {
-  const users = await seedUsers();
-  const project = await seedProject(users);
-  const issues = await seedIssues(project);
-  await seedComments(issues[0], project.users[0]);
-  return users[0];
+  const savedIssues = await Issue.insertMany(issues);
+  return savedIssues;
+};
+
+// Seed Comments
+const seedComments = async (issues: IIssue[], users: IUser[]): Promise<IComment[]> => {
+  const comments = TestData.comments.map((commentData: BaseComment) => {
+    return new Comment({
+      ...commentData,
+      issue: issues[0]._id,
+      user: users[0]._id,
+    });
+  });
+
+  const savedComments = await Comment.insertMany(comments);
+  return savedComments;
+};
+
+const createTestAccount = async (): Promise<void> => {
+  try {
+    const users = await seedUsers();
+    const project = await seedProject(users);
+    const issues = await seedIssues(project, users);
+    await seedComments(issues, users);
+    console.log('Database seeded successfully with test data.');
+  } catch (error) {
+    console.error('Error seeding the database:', error);
+  }
 };
 
 export default createTestAccount;

@@ -1,9 +1,12 @@
-import { getConnection } from 'typeorm';
+import mongoose from 'mongoose';
+import createDatabaseConnection from './createConnection';
 
 const resetDatabase = async (): Promise<void> => {
-  const connection = getConnection();
-  await connection.dropDatabase();
-  await connection.synchronize();
+  if (mongoose.connection.readyState !== 1) {
+    await createDatabaseConnection();
+  }
+
+  await mongoose.connection.db.dropDatabase();
 };
 
 export default resetDatabase;
