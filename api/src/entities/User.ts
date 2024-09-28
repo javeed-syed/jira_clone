@@ -1,64 +1,77 @@
-import {
-  BaseEntity,
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  OneToMany,
-  ManyToMany,
-  ManyToOne,
-  RelationId,
-} from 'typeorm';
+import mongoose, { Document, Schema } from 'mongoose';
 
-import is from 'utils/validation';
-import { Comment, Issue, Project } from '.';
-
-@Entity()
-class User extends BaseEntity {
-  static validations = {
-    name: [is.required(), is.maxLength(100)],
-    email: [is.required(), is.email(), is.maxLength(200)],
-  };
-
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column('varchar')
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IUser extends Document {
   name: string;
-
-  @Column('varchar')
   email: string;
-
-  @Column('varchar', { length: 2000 })
   avatarUrl: string;
-
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt: Date;
-
-  @OneToMany(
-    () => Comment,
-    comment => comment.user,
-  )
-  comments: Comment[];
-
-  @ManyToMany(
-    () => Issue,
-    issue => issue.users,
-  )
-  issues: Issue[];
-
-  @ManyToOne(
-    () => Project,
-    project => project.users,
-  )
-  project: Project;
-
-  @RelationId((user: User) => user.project)
-  projectId: number;
+  comments: mongoose.Types.ObjectId[];
+  issues: mongoose.Types.ObjectId[];
+  projects: mongoose.Types.ObjectId[];
 }
+
+const UserSchema: Schema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      maxlength: 100,
+    },
+    email: {
+      type: String,
+      required: true,
+      maxlength: 200,
+      unique: true,
+      validate: {
+        validator(value: string) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        },
+        message: 'Invalid email address format',
+      },
+    },
+    avatarUrl: {
+      type: String,
+      maxlength: 2000,
+    },
+    comments: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: 'Comment',
+      },
+    ],
+    issues: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: 'Issue',
+      },
+    ],
+    projects: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: 'Project',
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  },
+);
+
+const User = mongoose.model<IUser>('User', UserSchema);
+
+// Mongoose middleware to delete user-related data (issues and comments) when users are deleted.
+UserSchema.pre('deleteMany', async function deleteIssuesAndComments(next) {
+  const conditions = this.getFilter();
+  try {
+    // eslint-disable-next-line no-underscore-dangle
+    await mongoose.model('Issue').deleteMany({ user: { $in: conditions._id } });
+    // eslint-disable-next-line no-underscore-dangle
+    await mongoose.model('Comment').deleteMany({ user: { $in: conditions._id } });
+    next();
+  } catch (error) {
+    console.error('Error deleting related issues and comments:', error);
+    // next(error);
+  }
+});
 
 export default User;

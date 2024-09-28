@@ -1,109 +1,109 @@
+import mongoose, { Document, Schema } from 'mongoose';
 import striptags from 'striptags';
-import {
-  BaseEntity,
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  OneToMany,
-  ManyToMany,
-  JoinTable,
-  RelationId,
-  BeforeUpdate,
-  BeforeInsert,
-} from 'typeorm';
-
-import is from 'utils/validation';
 import { IssueType, IssueStatus, IssuePriority } from 'constants/issues';
-import { Comment, Project, User } from '.';
 
-@Entity()
-class Issue extends BaseEntity {
-  static validations = {
-    title: [is.required(), is.maxLength(200)],
-    type: [is.required(), is.oneOf(Object.values(IssueType))],
-    status: [is.required(), is.oneOf(Object.values(IssueStatus))],
-    priority: [is.required(), is.oneOf(Object.values(IssuePriority))],
-    listPosition: is.required(),
-    reporterId: is.required(),
-  };
-
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column('varchar')
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IIssue extends Document {
   title: string;
-
-  @Column('varchar')
   type: IssueType;
-
-  @Column('varchar')
   status: IssueStatus;
-
-  @Column('varchar')
   priority: IssuePriority;
-
-  @Column('double precision')
   listPosition: number;
-
-  @Column('text', { nullable: true })
-  description: string | null;
-
-  @Column('text', { nullable: true })
-  descriptionText: string | null;
-
-  @Column('integer', { nullable: true })
-  estimate: number | null;
-
-  @Column('integer', { nullable: true })
-  timeSpent: number | null;
-
-  @Column('integer', { nullable: true })
-  timeRemaining: number | null;
-
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt: Date;
-
-  @Column('integer')
-  reporterId: number;
-
-  @ManyToOne(
-    () => Project,
-    project => project.issues,
-  )
-  project: Project;
-
-  @Column('integer')
-  projectId: number;
-
-  @OneToMany(
-    () => Comment,
-    comment => comment.issue,
-  )
-  comments: Comment[];
-
-  @ManyToMany(
-    () => User,
-    user => user.issues,
-  )
-  @JoinTable()
-  users: User[];
-
-  @RelationId((issue: Issue) => issue.users)
-  userIds: number[];
-
-  @BeforeInsert()
-  @BeforeUpdate()
-  setDescriptionText = (): void => {
-    if (this.description) {
-      this.descriptionText = striptags(this.description);
-    }
-  };
+  description?: string;
+  descriptionText?: string;
+  estimate?: number;
+  timeSpent?: number;
+  timeRemaining?: number;
+  reporterId: mongoose.Types.ObjectId;
+  project: mongoose.Types.ObjectId;
+  comments: mongoose.Types.ObjectId[];
+  users: mongoose.Types.ObjectId[];
+  authorId: mongoose.Types.ObjectId;
 }
+
+const IssueSchema: Schema = new Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      maxlength: 200,
+    },
+    type: {
+      type: String,
+      enum: Object.values(IssueType),
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: Object.values(IssueStatus),
+      required: true,
+    },
+    priority: {
+      type: String,
+      enum: Object.values(IssuePriority),
+      required: true,
+    },
+    listPosition: {
+      type: Number,
+      required: true,
+    },
+    description: String,
+    descriptionText: String,
+    estimate: Number,
+    timeSpent: Number,
+    timeRemaining: Number,
+    reporterId: {
+      type: mongoose.Types.ObjectId,
+      required: true,
+    },
+    project: {
+      type: mongoose.Types.ObjectId,
+      ref: 'Project',
+      required: true,
+    },
+    comments: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: 'Comment',
+      },
+    ],
+    users: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    authorId: {
+      type: mongoose.Types.ObjectId,
+      ref: 'User',
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+// Mongoose middleware to processDescription
+IssueSchema.pre<IIssue>('save', function processDescription(next) {
+  if (this.description) {
+    this.descriptionText = striptags(this.description);
+  }
+  next();
+});
+
+// Mongoose middleware to delete issue-related comments when issues are deleted.
+IssueSchema.pre('deleteMany', async function deleteComments(next) {
+  const conditions = this.getFilter();
+  try {
+    // eslint-disable-next-line no-underscore-dangle
+    await mongoose.model('Comment').deleteMany({ issue: { $in: conditions._id } });
+    next();
+  } catch (error) {
+    console.error('Error deleting related issues:', error);
+    // next(error);
+  }
+});
+
+const Issue = mongoose.model<IIssue>('Issue', IssueSchema);
 
 export default Issue;

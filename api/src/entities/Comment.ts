@@ -1,52 +1,37 @@
-import {
-  BaseEntity,
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-} from 'typeorm';
+import mongoose, { Document, Schema } from 'mongoose';
 
-import is from 'utils/validation';
-import { Issue, User } from '.';
-
-@Entity()
-class Comment extends BaseEntity {
-  static validations = {
-    body: [is.required(), is.maxLength(50000)],
-  };
-
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column('text')
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IComment extends Document {
   body: string;
-
-  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
-
-  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
-
-  @ManyToOne(
-    () => User,
-    user => user.comments,
-  )
-  user: User;
-
-  @Column('integer')
-  userId: number;
-
-  @ManyToOne(
-    () => Issue,
-    issue => issue.comments,
-    { onDelete: 'CASCADE' },
-  )
-  issue: Issue;
-
-  @Column('integer')
-  issueId: number;
+  user: mongoose.Types.ObjectId;
+  issue: mongoose.Types.ObjectId;
 }
+
+const CommentSchema: Schema = new Schema(
+  {
+    body: {
+      type: String,
+      required: true,
+      maxlength: 50000,
+    },
+    user: {
+      type: mongoose.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    issue: {
+      type: mongoose.Types.ObjectId,
+      ref: 'Issue',
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+const Comment = mongoose.model<IComment>('Comment', CommentSchema);
 
 export default Comment;
