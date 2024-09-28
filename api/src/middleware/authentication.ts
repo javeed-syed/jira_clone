@@ -1,5 +1,4 @@
 import { Request } from 'express';
-
 import { verifyToken } from 'utils/authToken';
 import { catchErrors, InvalidTokenError } from 'errors';
 import { User } from 'entities';
@@ -13,7 +12,7 @@ export const authenticateUser = catchErrors(async (req, _res, next) => {
   if (!userId) {
     throw new InvalidTokenError('Authentication token is invalid.');
   }
-  const user = await User.findOne(userId);
+  const user = await User.findById(userId);
   if (!user) {
     throw new InvalidTokenError('Authentication token is invalid: User not found.');
   }

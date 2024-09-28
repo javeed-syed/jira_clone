@@ -72,7 +72,7 @@ UserSchema.pre('deleteMany', async function deleteIssuesAndComments(next): Promi
     next();
   } catch (error) {
     console.error('Error deleting related issues and comments:', error);
-    // next(error);
+    next(error);
   }
 });
 

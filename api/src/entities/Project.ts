@@ -56,7 +56,7 @@ ProjectSchema.pre('deleteMany', async function deleteRelatedIssues(next) {
     next();
   } catch (error) {
     console.error('Error deleting related issues:', error);
-    // next(error);
+    next(error);
   }
 });
 

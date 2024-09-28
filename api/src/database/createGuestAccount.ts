@@ -14,6 +14,7 @@ import {
   BaseComment,
 } from '../entities';
 import { GuestAccountData } from '../constants/data';
+import resetDatabase from './resetDatabase';
 
 const getRandomIndex = (arr: any[]): number => Math.floor(Math.random() * arr.length);
 
@@ -39,10 +40,11 @@ const seedIssues = async (project: IProject, users: IUser[]): Promise<IIssue[]> 
       .sort(() => Math.random() - 0.5)
       .slice(0, getRandomIndex(users) + 1);
 
+    // Link the project by its ObjectId
     return new Issue({
       ...issueData,
-      reporter: randomReporter,
-      users: randomAssignees,
+      reporterId: randomReporter,
+      userIds: randomAssignees,
       project: project._id,
     });
   });
@@ -69,6 +71,7 @@ const seedComments = async (issues: IIssue[], users: IUser[]): Promise<IComment[
 // Main seeding function
 const createGuestAccount = async (): Promise<IUser | null> => {
   try {
+    await resetDatabase();
     const users = await seedUsers();
     const project = await seedProject(users);
     const issues = await seedIssues(project, users);

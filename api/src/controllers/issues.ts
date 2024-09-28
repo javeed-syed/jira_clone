@@ -15,7 +15,7 @@ export const getIssueWithUsersAndComments = catchErrors(async (req, res) => {
   if (!issueId) {
     throw new BadUserInputError({ issueId });
   }
-  const issue = await Issue.findOne({ _id: issueId }).populate('users');
+  const issue = await Issue.findOne({ _id: issueId });
 
   if (issue) {
     issue.comments = await Comment.find({ issue: issueId });
