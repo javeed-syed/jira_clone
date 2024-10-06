@@ -13,9 +13,9 @@ const propTypes = {
 };
 
 const ProjectBoardIssueDetailsAssigneesReporter = ({ issue, updateIssue, projectUsers }) => {
-  const getUserById = userId => projectUsers.find(user => user.id === userId);
+  const getUserById = userId => projectUsers.find(user => user._id === userId);
 
-  const userOptions = projectUsers.map(user => ({ value: user.id, label: user.name }));
+  const userOptions = projectUsers.map(user => ({ value: user._id, label: user.name }));
 
   return (
     <Fragment>
@@ -55,7 +55,7 @@ const ProjectBoardIssueDetailsAssigneesReporter = ({ issue, updateIssue, project
 
 const renderUser = (user, isSelectValue, removeOptionValue) => (
   <User
-    key={user.id}
+    key={user._id}
     isSelectValue={isSelectValue}
     withBottomMargin={!!removeOptionValue}
     onClick={() => removeOptionValue && removeOptionValue()}

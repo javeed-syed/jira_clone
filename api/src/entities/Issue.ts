@@ -20,7 +20,7 @@ export interface IIssue extends Document, BaseIssue {
   reporterId: mongoose.Types.ObjectId;
   project: mongoose.Types.ObjectId;
   comments: mongoose.Types.ObjectId[];
-  users: mongoose.Types.ObjectId[];
+  userIds: mongoose.Types.ObjectId[];
   authorId: mongoose.Types.ObjectId;
 }
 
@@ -70,7 +70,7 @@ const IssueSchema: Schema = new Schema(
         ref: 'Comment',
       },
     ],
-    users: [
+    userIds: [
       {
         type: mongoose.Types.ObjectId,
         ref: 'User',
@@ -103,7 +103,7 @@ IssueSchema.pre('deleteMany', async function deleteComments(next) {
     next();
   } catch (error) {
     console.error('Error deleting related issues:', error);
-    // next(error);
+    next(error);
   }
 });
 

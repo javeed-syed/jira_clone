@@ -15,10 +15,10 @@ const propTypes = {
 const ProjectBoardIssueDetailsComments = ({ issue, fetchIssue }) => (
   <Comments>
     <Title>Comments</Title>
-    <Create issueId={issue.id} fetchIssue={fetchIssue} />
+    <Create issueId={issue._id} fetchIssue={fetchIssue} />
 
     {sortByNewest(issue.comments, 'createdAt').map(comment => (
-      <Comment key={comment.id} comment={comment} fetchIssue={fetchIssue} />
+      <Comment key={comment._id} comment={comment} fetchIssue={fetchIssue} />
     ))}
   </Comments>
 );

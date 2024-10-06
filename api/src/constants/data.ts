@@ -24,7 +24,7 @@ export const GuestAccountData = {
     url: 'https://www.atlassian.com/software/jira',
     description:
       'Plan, track, and manage your agile and software development projects in Jira. Customize your workflow, collaborate, and release great software.',
-    category: 'SOFTWARE',
+    category: ProjectCategory.SOFTWARE,
   },
   issues: [
     {

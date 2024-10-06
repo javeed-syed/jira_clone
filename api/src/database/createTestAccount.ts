@@ -39,7 +39,7 @@ const seedIssues = async (project: IProject, users: IUser[]): Promise<IIssue[]> 
     return new Issue({
       ...issueData,
       reporter: reporterId,
-      users: assignees,
+      userIds: assignees,
       project: project._id, // Link the project by its ObjectId
     });
   });

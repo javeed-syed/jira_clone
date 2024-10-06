@@ -33,11 +33,11 @@ const ProjectBoardFilters = ({ projectUsers, defaultFilters, filters, mergeFilte
       />
       <Avatars>
         {projectUsers.map(user => (
-          <AvatarIsActiveBorder key={user.id} isActive={userIds.includes(user.id)}>
+          <AvatarIsActiveBorder key={user._id} isActive={userIds.includes(user._id)}>
             <StyledAvatar
               avatarUrl={user.avatarUrl}
               name={user.name}
-              onClick={() => mergeFilters({ userIds: xor(userIds, [user.id]) })}
+              onClick={() => mergeFilters({ userIds: xor(userIds, [user._id]) })}
             />
           </AvatarIsActiveBorder>
         ))}

@@ -85,12 +85,12 @@ const ProjectIssueSearch = ({ project }) => {
 };
 
 const renderIssue = issue => (
-  <Link key={issue.id} to={`/project/board/issues/${issue.id}`}>
+  <Link key={issue._id} to={`/project/board/issues/${issue._id}`}>
     <Issue>
       <IssueTypeIcon type={issue.type} size={25} />
       <IssueData>
         <IssueTitle>{issue.title}</IssueTitle>
-        <IssueTypeId>{`${issue.type}-${issue.id}`}</IssueTypeId>
+        <IssueTypeId>{`${issue.type}-${issue._id}`}</IssueTypeId>
       </IssueData>
     </Issue>
   </Link>
