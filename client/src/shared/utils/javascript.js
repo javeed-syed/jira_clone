@@ -1,3 +1,5 @@
+import moment from "moment";
+
 export const moveItemWithinArray = (arr, item, newIndex) => {
   const arrClone = [...arr];
   const oldIndex = arrClone.indexOf(item);
@@ -13,7 +15,7 @@ export const insertItemIntoArray = (arr, item, index) => {
 
 export const updateArrayItemById = (arr, itemId, fields) => {
   const arrClone = [...arr];
-  const item = arrClone.find(({ id }) => id === itemId);
+  const item = arrClone.find(({ _id }) => _id === itemId);
   if (item) {
     const itemIndex = arrClone.indexOf(item);
     arrClone.splice(itemIndex, 1, { ...item, ...fields });
@@ -21,5 +23,7 @@ export const updateArrayItemById = (arr, itemId, fields) => {
   return arrClone;
 };
 
-export const sortByNewest = (items, sortField) =>
-  items.sort((a, b) => -a[sortField].localeCompare(b[sortField]));
+export const sortByNewest = (items, sortField) => {
+  return items.sort((a, b) => moment(b[sortField]).valueOf() - moment(a[sortField]).valueOf())
+}
+  ;

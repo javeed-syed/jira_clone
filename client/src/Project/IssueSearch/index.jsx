@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 import React, { Fragment, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
@@ -43,7 +44,7 @@ const ProjectIssueSearch = ({ project }) => {
     setIsSearchTermEmpty(!searchTerm);
 
     if (searchTerm) {
-      fetchIssues({ searchTerm });
+      fetchIssues({ searchTerm, projectId: project._id });
     }
   };
 

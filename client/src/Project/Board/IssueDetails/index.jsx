@@ -1,9 +1,10 @@
+/* eslint-disable no-underscore-dangle */
 import React, { Fragment } from 'react';
 import PropTypes from 'prop-types';
 
 import api from 'shared/utils/api';
 import useApi from 'shared/hooks/api';
-import { PageError, CopyLinkButton, Button, AboutTooltip } from 'shared/components';
+import { PageError, CopyLinkButton, Button } from 'shared/components';
 
 import Loader from './Loader';
 import Type from './Type';
@@ -59,13 +60,6 @@ const ProjectBoardIssueDetails = ({
       <TopActions>
         <Type issue={issue} updateIssue={updateIssue} />
         <TopActionsRight>
-          <AboutTooltip
-            renderLink={linkProps => (
-              <Button icon="feedback" variant="empty" {...linkProps}>
-                Give feedback
-              </Button>
-            )}
-          />
           <CopyLinkButton variant="empty" />
           <Delete issue={issue} fetchProject={fetchProject} modalClose={modalClose} />
           <Button icon="close" iconSize={24} variant="empty" onClick={modalClose} />

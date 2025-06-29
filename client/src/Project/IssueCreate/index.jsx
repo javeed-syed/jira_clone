@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -57,8 +58,8 @@ const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose }) => 
           await createIssue({
             ...values,
             status: IssueStatus.BACKLOG,
-            projectId: project._id,
-            users: values.userIds.map(id => ({ id })),
+            project: project._id,
+            users: values.userIds.map(_id => ({ _id })),
           });
           await fetchProject();
           toast.success('Issue has been successfully created.');

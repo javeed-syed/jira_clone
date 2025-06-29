@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 import React, { Fragment } from 'react';
 import PropTypes from 'prop-types';
 
@@ -26,7 +27,7 @@ const ProjectBoardIssueDetailsAssigneesReporter = ({ issue, updateIssue, project
         dropdownWidth={343}
         placeholder="Unassigned"
         name="assignees"
-        value={issue.userIds}
+        value={issue.users.map(user => user._id)}
         options={userOptions}
         onChange={userIds => {
           updateIssue({ userIds, users: userIds.map(getUserById) });
