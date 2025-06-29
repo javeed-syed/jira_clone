@@ -25,3 +25,26 @@ export const update = catchErrors(async (req, res) => {
   }
   res.respond({ project });
 });
+
+export const create = catchErrors(async (req, res) => {
+  const { body } = req;
+  const project = new Project({
+    ...body,
+    users: [req.currentUser._id],
+  });
+  await project.save();
+  res.respond({ project });
+});
+
+export const getAllProjects = catchErrors(async (req, res) => {
+  const { currentUser } = req;
+  const { isAdmin } = currentUser;
+  let query = {};
+  if (!isAdmin) {
+    query = { users: { $in: [currentUser._id] } };
+  }
+  const projects = await Project.find(query).populate('users');
+  res.respond({
+    projects,
+  });
+});
