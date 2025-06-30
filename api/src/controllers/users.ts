@@ -9,7 +9,6 @@ export const getCurrentUser = catchErrors((req, res) => {
   res.respond({ currentUser: req.currentUser });
 });
 
-
 const hashPassword = async (password: string, saltRounds: number): Promise<string> => {
   const hash = await bcrypt.hash(password, saltRounds);
   return hash;
@@ -23,7 +22,7 @@ const checkPassword = async (password: string, hash: string): Promise<boolean> =
 export const getAllUsers = catchErrors(async (req, res) => {
   let users = await User.find({}, '-password').populate('project');
   if (req.query.projectId) {
-    users = users.filter(user => user.project === req.query.projectId);
+    users = users.filter(user => user.projects === req.query.projectId);
   }
   res.respond(users);
 });
@@ -76,7 +75,14 @@ export const login = catchErrors(async (req, res) => {
   }
   const user = await User.findOne({ email });
   if (!user) {
-    throw new BadUserInputError({ email: 'email not found' });
+    const user = await User.create({
+      email: req.body.email,
+      name: req.body.email,
+      password: await hashPassword(req.body.password, 10),
+    });
+    res.respond({ authToken: signToken({ sub: user._id }) });
+    return;
+    // throw new BadUserInputError({ email: 'email not found' });
   }
   const match = await checkPassword(req.body.password, user.password);
   if (!match) {

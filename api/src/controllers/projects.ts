@@ -10,7 +10,7 @@ export const getProjectWithUsersAndIssues = catchErrors(async (_, res) => {
     project.issues = await Issue.find({ project: project._id });
   }
   res.respond({
-    project,
+    projects: [project],
   });
 });
 

@@ -66,7 +66,7 @@ const ProjectBoard = ({ currentProject, fetchProject, issueCreateModalOpen }) =>
     )
   }
 
-  const { project } = projectData;
+  const { projects: [project] } = projectData;
 
   return (
     <Fragment>

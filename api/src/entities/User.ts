@@ -5,6 +5,8 @@ export interface BaseUser {
   email: string;
   name: string;
   avatarUrl: string;
+  password: string;
+  isAdmin: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/interface-name-prefix
@@ -55,6 +57,14 @@ const UserSchema: Schema = new Schema(
         ref: 'Project',
       },
     ],
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
