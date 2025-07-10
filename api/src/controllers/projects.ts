@@ -4,8 +4,14 @@
 import { Issue, Project } from 'entities';
 import { BadUserInputError, EntityNotFoundError, catchErrors } from 'errors';
 
-export const getProjectWithUsersAndIssues = catchErrors(async (_, res) => {
-  const project = await Project.findOne().populate('users');
+
+
+export const getProjectWithUsersAndIssues = catchErrors(async (req, res) => {
+  const { projectId } = req.params;
+  if (!projectId) {
+    throw new BadUserInputError({ projectId });
+  }
+  const project = await Project.findById(projectId).populate('users');
   if (project) {
     project.issues = await Issue.find({ project: project._id });
   }
@@ -36,6 +42,7 @@ export const create = catchErrors(async (req, res) => {
   res.respond({ project });
 });
 
+
 export const getAllProjects = catchErrors(async (req, res) => {
   const { currentUser } = req;
   const { isAdmin } = currentUser;
@@ -48,3 +55,4 @@ export const getAllProjects = catchErrors(async (req, res) => {
     projects,
   });
 });
+

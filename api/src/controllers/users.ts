@@ -1,14 +1,16 @@
 /* eslint-enable @typescript-eslint/no-misused-promises */
 /* eslint-disable no-underscore-dangle */
-import { Project, User, Comment } from 'entities';
+import { IProject, Project, User, Comment } from 'entities';
 import bcrypt from 'bcrypt';
 import { BadUserInputError, CustomError, catchErrors } from 'errors';
 import { signToken } from 'utils/authToken';
+import { sendMail } from 'utils/mailer';
+import mongoose from 'mongoose';
+import { newAccountTemplate } from 'utils/mailTemplates';
 
 export const getCurrentUser = catchErrors((req, res) => {
   res.respond({ currentUser: req.currentUser });
 });
-
 const hashPassword = async (password: string, saltRounds: number): Promise<string> => {
   const hash = await bcrypt.hash(password, saltRounds);
   return hash;
@@ -19,10 +21,35 @@ const checkPassword = async (password: string, hash: string): Promise<boolean> =
   return match;
 };
 
+async function updateUserInProjects(
+  projects: IProject[],
+  userId: mongoose.Types.ObjectId,
+): Promise<void> {
+  for (const project of projects) {
+    if (!project.users.includes(userId)) {
+      project.users.push(userId);
+    }
+    await project.save();
+  }
+}
+
+async function deleteUserInProjects(
+  projects: IProject[],
+  userId: mongoose.Types.ObjectId,
+): Promise<void> {
+  for (const project of projects) {
+    if (project.users.includes(userId)) {
+      const userIndex = project.users.findIndex(user => user === userId);
+      project.users.splice(userIndex, 1);
+    }
+    await project.save();
+  }
+}
+
 export const getAllUsers = catchErrors(async (req, res) => {
-  let users = await User.find({}, '-password').populate('project');
+  let users = await User.find({}).populate('projects');
   if (req.query.projectId) {
-    users = users.filter(user => user.projects === req.query.projectId);
+    users = users.filter(user => user.projects.includes(req.query.projectId));
   }
   res.respond(users);
 });
@@ -50,20 +77,30 @@ export const create = catchErrors(async (req, res) => {
     ...req.body,
     password,
   };
-  const projectName = body.project;
-  if (!projectName) {
+  const projectNames = body.projects;
+  if (!projectNames) {
     throw new BadUserInputError({ project: 'Project not provided' });
   }
-  const project = await Project.findOne({ name: projectName });
-  if (!project) {
-    throw new BadUserInputError({ project: 'project not found' });
+
+  const projects = await Project.find({ name: { $in: projectNames } });
+  const foundProjectNames = projects.map(project => project.name);
+
+  // Check if all requested projects are found
+  const missingProjects = projectNames.filter((name: string) => !foundProjectNames.includes(name));
+
+  if (missingProjects.length > 0) {
+    // Throw an error for missing projects
+    throw new CustomError(
+      `The following projects are not available: ${missingProjects.join(', ')}`,
+    );
   }
-  body.project = project._id;
+  body.projects = projects.map(project => project._id);
   const user = new User(body);
   await user.save();
-  if (project) {
-    project.users.push(user._id);
-    await project.save();
+  const mail = newAccountTemplate(user.name, FRONT_END_URLS.baseUrl);
+  sendMail(email, mail.subject, mail.body);
+  if (projects) {
+    await updateUserInProjects(projects, user._id);
   }
   res.respond({ user });
 });

@@ -1,12 +1,20 @@
-/* eslint-disable no-underscore-dangle */
-/* eslint-disable @typescript-eslint/no-misused-promises */
+import { Comment, IIssue, Issue, User } from 'entities';
+import { BadUserInputError, CustomError, EntityNotFoundError, catchErrors } from 'errors';
 
-import { Comment, IIssue, Issue } from 'entities';
-import { BadUserInputError, EntityNotFoundError, catchErrors } from 'errors';
+import { FRONT_END_URLS } from 'constants/urls';
+import { issueCreatedTemplate } from 'utils/mailTemplates';
+import { sendMail } from '../utils/mailer';
 
 export const getProjectIssues = catchErrors(async (req, res) => {
-  const { _id } = req.currentUser;
-  const issues = await Issue.find({ users: _id });
+  const { searchTerm, projectId } = req.query;
+  if (!searchTerm || !projectId) {
+    throw new CustomError('either of one searchTerm or projectId not provided');
+  }
+
+  const issues = await Issue.find({
+    project: projectId,
+    title: { $in: [new RegExp(searchTerm, 'i')] },
+  });
   res.respond({ issues });
 });
 
@@ -15,10 +23,10 @@ export const getIssueWithUsersAndComments = catchErrors(async (req, res) => {
   if (!issueId) {
     throw new BadUserInputError({ issueId });
   }
-  const issue = await Issue.findOne({ _id: issueId });
+  const issue = await Issue.findOne({ _id: issueId }).populate('users');
 
   if (issue) {
-    issue.comments = await Comment.find({ issue: issueId });
+    issue.comments = await Comment.find({ issue: issueId }).populate('user');
   }
   res.respond({ issue });
 });
@@ -26,7 +34,25 @@ export const getIssueWithUsersAndComments = catchErrors(async (req, res) => {
 export const create = catchErrors(async (req, res) => {
   const listPosition = await calculateListPosition(req.body);
   const issue = new Issue({ ...req.body, listPosition });
+  const assignee = await User.findById(issue.users[0]);
+  const author = await User.findById(issue.authorId);
   await issue.save();
+  const issueUrl = FRONT_END_URLS.baseUrl + FRONT_END_URLS.issues + issue.id;
+  if (!assignee) {
+    throw new Error('assignee not found');
+  }
+  const user = await User.findById(issue.reporterId);
+  if (!user) {
+    throw new Error('User not found.');
+  }
+  const issueDetails = {
+    title: issue.title,
+    reporter: user.name,
+    assignee: assignee.name,
+    url: issueUrl,
+  };
+  const mail = issueCreatedTemplate(author?.name, issueDetails);
+  sendMail(assignee?.email, mail.subject, mail.body);
   res.respond({ issue });
 });
 
