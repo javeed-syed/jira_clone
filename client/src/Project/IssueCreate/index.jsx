@@ -29,9 +29,10 @@ const propTypes = {
   fetchProject: PropTypes.func.isRequired,
   onCreate: PropTypes.func.isRequired,
   modalClose: PropTypes.func.isRequired,
+  projectUsers: PropTypes.array.isRequired,
 };
 
-const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose }) => {
+const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose, projectUsers }) => {
   const [{ isCreating }, createIssue] = useApi.post('/issues');
 
   const { currentUserId } = useCurrentUser();
@@ -59,7 +60,8 @@ const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose }) => 
             ...values,
             status: IssueStatus.BACKLOG,
             project: project._id,
-            users: values.userIds.map(_id => ({ _id })),
+            users: [{ _id: values.userIds }],
+            authorId: currentUserId,
           });
           await fetchProject();
           toast.success('Issue has been successfully created.');
@@ -89,6 +91,7 @@ const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose }) => 
           name="description"
           label="Description"
           tip="Describe the issue in as much detail as you'd like."
+          mentionUsers={projectUsers}
         />
         <Form.Field.Select
           name="reporterId"
@@ -98,7 +101,6 @@ const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose }) => 
           renderValue={renderUser(project)}
         />
         <Form.Field.Select
-          isMulti
           name="userIds"
           label="Assignees"
           tio="People who are responsible for dealing with this issue."

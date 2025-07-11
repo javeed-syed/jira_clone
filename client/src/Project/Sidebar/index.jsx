@@ -18,6 +18,7 @@ import {
   LinkItem,
   LinkText,
   NotImplemented,
+  Arrow,
 } from './Styles';
 
 const propTypes = {
@@ -35,36 +36,35 @@ const ProjectOption = ({ data, innerRef, innerProps }) => {
         <ProjectCategory>{ProjectCategoryCopy[data.category]} project</ProjectCategory>
       </ProjectTexts>
     </ProjectInfo>
-  )
-}
+  );
+};
 
-const ProjectSidebar = ({projects, setCurrentProject, currentProject }) => {
+const ProjectSidebar = ({ projects, setCurrentProject, currentProject }) => {
   const match = useRouteMatch();
   const { currentUser } = useCurrentUser();
   const [selectedProject, setSelectedProject] = useState(currentProject);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
   useEffect(() => {
-      if (currentProject) {
-        setSelectedProject(currentProject);
-      }
-  }, [currentProject])
+    if (currentProject) {
+      setSelectedProject(currentProject);
+    }
+  }, [currentProject]);
 
-  const onChange = (data) => {
+  const onChange = data => {
     setCurrentProject(data);
-    setSelectedProject(data)
-  }
+    setSelectedProject(data);
+  };
 
   return (
-    <Sidebar>
-      <div
-        style={{marginTop: 10, marginBottom: 10}}
-      >
+    <Sidebar isVisible={isSidebarVisible}>
+      <div style={{ marginTop: 10, marginBottom: 10 }}>
         {selectedProject && projects && projects.length > 0 && (
           <Select
             value={selectedProject}
             onChange={onChange}
             isSearchable={false}
-            formatOptionLabel={(data) => (
+            formatOptionLabel={data => (
               <ProjectInfo key={data._id}>
                 <ProjectTexts>
                   <ProjectName>{data.name}</ProjectName>
@@ -79,10 +79,19 @@ const ProjectSidebar = ({projects, setCurrentProject, currentProject }) => {
           />
         )}
       </div>
-
+      <Arrow
+        onClick={() => {
+          setIsSidebarVisible(prev => !prev);
+        }}
+        isVisible={isSidebarVisible}
+      >
+        &gt;&gt;
+      </Arrow>
       {renderLinkItem(match, 'Kanban Board', 'board', '/board')}
       {currentUser && currentUser.isAdmin && renderLinkItem(match, 'Users', 'user', '/users')}
-      {currentUser && currentUser.isAdmin && renderLinkItem(match, 'Project settings', 'settings', '/settings')}
+      {currentUser &&
+        currentUser.isAdmin &&
+        renderLinkItem(match, 'Project settings', 'settings', '/settings')}
       <Divider />
       {renderLinkItem(match, 'Releases', 'shipping')}
       {renderLinkItem(match, 'Issues and filters', 'issues')}

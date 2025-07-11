@@ -17,6 +17,7 @@ export const User = styled.div`
       &:hover {
         background: ${color.backgroundMedium};
       }
+      ${props.isNonEdit && 'cursor : not-allowed'}
     `}
 `;
 

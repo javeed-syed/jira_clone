@@ -7,6 +7,7 @@ import { getStoredAuthToken, removeStoredAuthToken } from 'shared/utils/authToke
 
 const defaults = {
   baseURL: process.env.API_URL || 'http://localhost:3000',
+  // baseURL: `${window.location.origin}/jira_api`,
   headers: () => ({
     'Content-Type': 'application/json',
     Authorization: getStoredAuthToken() ? `Bearer ${getStoredAuthToken()}` : undefined,

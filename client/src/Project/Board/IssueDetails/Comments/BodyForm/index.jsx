@@ -11,6 +11,7 @@ const propTypes = {
   isWorking: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
+  projectUsers: PropTypes.func.isRequired,
 };
 
 const ProjectBoardIssueDetailsCommentsBodyForm = ({
@@ -19,6 +20,7 @@ const ProjectBoardIssueDetailsCommentsBodyForm = ({
   isWorking,
   onSubmit,
   onCancel,
+  projectUsers,
 }) => {
   const $textareaRef = useRef();
 
@@ -35,6 +37,7 @@ const ProjectBoardIssueDetailsCommentsBodyForm = ({
         defaultValue={value}
         onChange={onChange}
         ref={$textareaRef}
+        mentionUsers={projectUsers}
       />
       <Actions>
         <FormButton variant="primary" isWorking={isWorking} onClick={handleSubmit}>

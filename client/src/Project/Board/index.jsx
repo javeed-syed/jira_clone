@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-import React, { Fragment, useEffect, useState } from 'react';
+import React, { Fragment, forwardRef, useEffect, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import { Route, useRouteMatch, useHistory } from 'react-router-dom';
 
@@ -11,7 +11,6 @@ import { updateArrayItemById } from 'shared/utils/javascript';
 import { Item } from 'Project/NavbarLeft/Styles';
 import { ActionButton, Actions } from 'Project/IssueCreate/Styles';
 import useCurrentUser from 'shared/hooks/currentUser';
-
 
 import IssueCreate from '../IssueCreate';
 import Header from './Header';
@@ -33,27 +32,40 @@ const defaultFilters = {
   recent: false,
 };
 
-const ProjectBoard = ({ currentProject, fetchProject, issueCreateModalOpen }) => {
+const ProjectBoard = forwardRef(({ currentProject, fetchProject, issueCreateModalOpen }, ref) => {
   const match = useRouteMatch();
   const history = useHistory();
   const { currentUser } = useCurrentUser();
-  const [filters, mergeFilters] = useMergeState(defaultFilters);
+  const [filters, mergeFilters] = useMergeState({
+    [currentProject._id]: defaultFilters,
+  });
   const issueCreateModalHelpers = createQueryParamModalHelpers('issue-create');
-
-  const [{ data: projectData, error, setLocalData }, fetchCurrentProject] = useApi.get(`/project/${currentProject._id}`, {projectId: currentProject._id});
+  const [
+    { data: projectData, error, setLocalData },
+    fetchCurrentProject,
+  ] = useApi.get(`/project/${currentProject._id}`, { projectId: currentProject._id });
+  useImperativeHandle(
+    ref,
+    () => {
+      return {
+        fetchCurrentProject,
+      };
+    },
+    [fetchCurrentProject],
+  );
 
   useEffect(() => {
     fetchCurrentProject();
-  }, [fetchCurrentProject, currentProject._id])
+  }, [fetchCurrentProject, currentProject._id]);
 
   const updateLocalProjectIssues = (issueId, updatedFields) => {
     setLocalData(currentData => ({
       project: {
         ...currentData.project,
-        issues: updateArrayItemById(currentData.project.issues, issueId, updatedFields)
-      }
-    }))
-  }
+        issues: updateArrayItemById(currentData.project.issues, issueId, updatedFields),
+      },
+    }));
+  };
 
   if (!projectData) return <PageLoader />;
 
@@ -63,18 +75,26 @@ const ProjectBoard = ({ currentProject, fetchProject, issueCreateModalOpen }) =>
         {error}
         <PageError />
       </div>
-    )
+    );
   }
 
-  const { projects: [project] } = projectData;
+  const { project } = projectData;
+
+  const presentProjectFilters = filters[project._id] || defaultFilters;
+  const mergeCurrentProjectFilters = presentFilters => {
+    mergeFilters(prev => ({
+      ...prev,
+      [project._id]: presentFilters,
+    }));
+  };
 
   return (
     <Fragment>
       {/* // user avatar with breadcrumbs */}
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <div style={{display: 'flex', alignItems: 'center'}}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <Breadcrumbs items={['Projects', project.name, 'Kanban Board']} />
-          <ActionButton type="button" variant="primary" onClick={issueCreateModalHelpers.open} >
+          <ActionButton type="button" variant="primary" onClick={issueCreateModalHelpers.open}>
             Create Issue
           </ActionButton>
         </div>
@@ -86,12 +106,12 @@ const ProjectBoard = ({ currentProject, fetchProject, issueCreateModalOpen }) =>
       <Filters
         projectUsers={project.users}
         defaultFilters={defaultFilters}
-        filters={filters}
-        mergeFilters={mergeFilters}
+        filters={presentProjectFilters}
+        mergeFilters={mergeCurrentProjectFilters}
       />
       <Lists
         project={project}
-        filters={filters}
+        filters={presentProjectFilters}
         updateLocalProjectIssues={updateLocalProjectIssues}
       />
       <Route
@@ -115,28 +135,27 @@ const ProjectBoard = ({ currentProject, fetchProject, issueCreateModalOpen }) =>
           />
         )}
       />
-      {currentProject && (
-        issueCreateModalHelpers.isOpen() && (
-          <Modal
-            isOpen
-            testid="modal:issue-create"
-            width={800}
-            withCloseIcon={false}
-            onClose={issueCreateModalHelpers.close}
-            renderContent={modal => (
-              <IssueCreate
-                project={currentProject}
-                fetchProject={fetchCurrentProject}
-                onCreate={() => history.push(`${match.url}/board`)}
-                modalClose={modal.close}
-              />
-            )}
-          />
-        )
+      {currentProject && issueCreateModalHelpers.isOpen() && (
+        <Modal
+          isOpen
+          testid="modal:issue-create"
+          width={800}
+          withCloseIcon={false}
+          onClose={issueCreateModalHelpers.close}
+          renderContent={modal => (
+            <IssueCreate
+              project={currentProject}
+              fetchProject={fetchCurrentProject}
+              onCreate={() => history.push(`${match.url}/board`)}
+              modalClose={modal.close}
+              projectUsers={project.users}
+            />
+          )}
+        />
       )}
     </Fragment>
   );
-};
+});
 
 ProjectBoard.propTypes = propTypes;
 

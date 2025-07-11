@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-underscore-dangle */
 import React from 'react';
+import { useHistory } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import toast from 'shared/utils/toast';
 import useApi from 'shared/hooks/api';
@@ -25,23 +26,21 @@ const propTypes = {
 };
 
 const renderOption = ({ value, removeOptionValue }) => {
-  
-    return (
-      <SelectItem
-        key={value}
-        withBottomMargin={!!removeOptionValue}
-        onClick={() => removeOptionValue && removeOptionValue()}
-      >
-        <SelectItemLabel>{value.toString()}</SelectItemLabel>
-        {removeOptionValue && <Icon type="close" top={2} />}
-      </SelectItem>
-    );
-  };
+  return (
+    <SelectItem
+      key={value}
+      withBottomMargin={!!removeOptionValue}
+      onClick={() => removeOptionValue && removeOptionValue()}
+    >
+      <SelectItemLabel>{value.toString()}</SelectItemLabel>
+      {removeOptionValue && <Icon type="close" top={2} />}
+    </SelectItem>
+  );
+};
 
 const UserCreate = ({ projects, project, fetchProject, onCreate, modalClose }) => {
   const [{ isCreating }, createUser] = useApi.post(`/user/create`);
-
-
+  const history = useHistory();
   return (
     <Form
       enableReinitialize
@@ -49,28 +48,33 @@ const UserCreate = ({ projects, project, fetchProject, onCreate, modalClose }) =
         name: '',
         email: '',
         isAdmin: false,
-        project: '',
+        projects: '',
         password: '',
         confirmPassword: '',
       }}
       validations={{
         name: Form.is.required(),
         email: [Form.is.required(), Form.is.email()],
-        project: [Form.is.required()],
+        isAdmin: [Form.is.required()],
+        projects: [Form.is.required()],
         password: Form.is.required(),
-        confirmPassword: [Form.is.required(), Form.is.match((value, fieldvalues) => {
-            return value === fieldvalues.password
-        }, "Confirm Password Should Match With Password")],
+        confirmPassword: [
+          Form.is.required(),
+          Form.is.match((value, fieldvalues) => {
+            return value === fieldvalues.password;
+          }, 'Confirm Password Should Match With Password'),
+        ],
       }}
       onSubmit={async (values, form) => {
         try {
-            console.log(values, form)
           await createUser({
             ...values,
           });
-          await fetchProject();
+          modalClose();
+          history.go(0);
           toast.success(`User ${values.name} has been successfully created.`);
-          onCreate();
+          // await fetchProject();
+          // onCreate();
         } catch (error) {
           Form.handleAPIError(error, form);
         }
@@ -79,27 +83,23 @@ const UserCreate = ({ projects, project, fetchProject, onCreate, modalClose }) =
       <FormElement>
         <FormHeading>Create User</FormHeading>
         <Divider />
-        <Form.Field.Input
-          name="name"
-          label="Enter Name"
-          placeholder="Enter Your Name"
-        />
-        <Form.Field.Input
-          name="email"
-          label="Enter Email"
-          placeholder="Enter Your Email"
-        />
+        <Form.Field.Input name="name" label="Enter Name" placeholder="Enter Your Name" />
+        <Form.Field.Input name="email" label="Enter Email" placeholder="Enter Your Email" />
         <Form.Field.Select
           name="isAdmin"
           label="Is Admin"
-          options={[{value: true, label: true}, {value: false, label: false}]}
+          options={[
+            { value: true, label: true },
+            { value: false, label: false },
+          ]}
           renderOption={renderOption}
           renderValue={renderOption}
         />
         <Form.Field.Select
-          name="project"
-          label="Project"
-          options={projects.map(proj => ({value: proj.name, label: proj._id}))}
+          name="projects"
+          label="Projects"
+          isMulti
+          options={projects.map(proj => ({ value: proj.name, label: proj._id }))}
           renderOption={renderOption}
           renderValue={renderOption}
         />

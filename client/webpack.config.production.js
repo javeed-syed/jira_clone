@@ -1,6 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
 
 module.exports = {
   mode: 'production',
@@ -58,13 +59,15 @@ module.exports = {
       template: path.join(__dirname, 'src/index.html'),
       favicon: path.join(__dirname, 'src/favicon.png'),
     }),
-    // TODO: Change .env while building
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: JSON.stringify('production'),
-        API_URL: JSON.stringify('https://jira-api.ivorreic.com'),
+        API_URL: JSON.stringify('https://vm2-linux.eastus.cloudapp.azure.com/jira_api'),
       },
     }),
     new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+    new Dotenv({
+      path: './.env.production',
+    }),
   ],
 };
