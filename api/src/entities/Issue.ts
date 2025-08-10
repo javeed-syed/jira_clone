@@ -1,8 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import striptags from 'striptags';
+
 import { IssueType, IssueStatus, IssuePriority } from 'constants/issues';
 
-export interface BaseIssue {
+// eslint-disable-next-line @typescript-eslint/interface-name-prefix
+export interface IIssue extends Document {
   title: string;
   type: IssueType;
   status: IssueStatus;
@@ -13,14 +15,12 @@ export interface BaseIssue {
   estimate?: number;
   timeSpent?: number;
   timeRemaining?: number;
-}
-
-// eslint-disable-next-line @typescript-eslint/interface-name-prefix
-export interface IIssue extends Document, BaseIssue {
+  createdAt: Date;
+  updatedAt: Date;
   reporterId: mongoose.Types.ObjectId;
   project: mongoose.Types.ObjectId;
   comments: mongoose.Types.ObjectId[];
-  userIds: mongoose.Types.ObjectId[];
+  users: mongoose.Types.ObjectId[];
   authorId: mongoose.Types.ObjectId;
 }
 
@@ -70,7 +70,7 @@ const IssueSchema: Schema = new Schema(
         ref: 'Comment',
       },
     ],
-    userIds: [
+    users: [
       {
         type: mongoose.Types.ObjectId,
         ref: 'User',
@@ -86,8 +86,9 @@ const IssueSchema: Schema = new Schema(
   },
 );
 
-// Mongoose middleware to processDescription
-IssueSchema.pre<IIssue>('save', function processDescription(next) {
+// Automatically update the `updatedAt` field on save
+// eslint-disable-next-line func-names
+IssueSchema.pre<IIssue>('save', function (next) {
   if (this.description) {
     this.descriptionText = striptags(this.description);
   }
@@ -103,7 +104,7 @@ IssueSchema.pre('deleteMany', async function deleteComments(next) {
     next();
   } catch (error) {
     console.error('Error deleting related issues:', error);
-    next(error);
+    next(error as Error);
   }
 });
 

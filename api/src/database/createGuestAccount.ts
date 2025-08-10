@@ -9,31 +9,27 @@ import {
   IProject,
   IIssue,
   IComment,
-  BaseUser,
-  BaseIssue,
-  BaseComment,
 } from '../entities';
 import { GuestAccountData } from '../constants/data';
-import resetDatabase from './resetDatabase';
 
 const getRandomIndex = (arr: any[]): number => Math.floor(Math.random() * arr.length);
 
-const seedUsers = async (): Promise<IUser[]> => {
-  const users = GuestAccountData.users.map((userData: BaseUser) => new User(userData));
+const seedUsers = async (projectId: string): Promise<IUser[]> => {
+  const users = GuestAccountData.users.map(userData => new User({
+    projects: [projectId],
+    ...userData
+  }
+  ));
   return User.insertMany(users);
 };
 
-const seedProject = async (users: IUser[]): Promise<IProject> => {
-  const projectData = {
-    ...GuestAccountData.project,
-    users: users.map(user => user._id),
-  };
-  const project = new Project(projectData);
+const seedProject = async (): Promise<IProject> => {
+  const project = new Project(GuestAccountData.project);
   return project.save();
 };
 
-const seedIssues = async (project: IProject, users: IUser[]): Promise<IIssue[]> => {
-  const issuesData = GuestAccountData.issues.map((issueData: BaseIssue) => {
+const seedIssues = async (projectId: string, users: IUser[]): Promise<IIssue[]> => {
+  const issuesData = GuestAccountData.issues.map((issueData) => {
     const randomReporter = users[getRandomIndex(users)]._id;
     const randomAssignees = users
       .map(user => user._id)
@@ -45,7 +41,7 @@ const seedIssues = async (project: IProject, users: IUser[]): Promise<IIssue[]> 
       ...issueData,
       reporterId: randomReporter,
       userIds: randomAssignees,
-      project: project._id,
+      project: projectId,
     });
   });
 
@@ -54,7 +50,7 @@ const seedIssues = async (project: IProject, users: IUser[]): Promise<IIssue[]> 
 
 // Seed Comments
 const seedComments = async (issues: IIssue[], users: IUser[]): Promise<IComment[]> => {
-  const commentsData = GuestAccountData.comments.map((commentData: BaseComment) => {
+  const commentsData = GuestAccountData.comments.map((commentData) => {
     const randomIssue = issues[getRandomIndex(issues)]._id;
     const randomUser = users[getRandomIndex(users)]._id;
 
@@ -71,10 +67,17 @@ const seedComments = async (issues: IIssue[], users: IUser[]): Promise<IComment[
 // Main seeding function
 const createGuestAccount = async (): Promise<IUser | null> => {
   try {
-    await resetDatabase();
-    const users = await seedUsers();
-    const project = await seedProject(users);
-    const issues = await seedIssues(project, users);
+    const guestEmail = GuestAccountData.users[0].email;
+
+    const existing = await User.findOne({ email: guestEmail });
+    if (existing) {
+      console.log('✅ Guest user already exists:', existing._id);
+      return null;
+    }
+
+    const project = await seedProject();
+    const users = await seedUsers(project._id);
+    const issues = await seedIssues(project._id, users);
     await seedComments(issues, users);
     console.log('Database seeded successfully with guest data.');
     return users[0];

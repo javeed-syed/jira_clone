@@ -11,10 +11,12 @@ import { handleError } from 'middleware/errors';
 import { RouteNotFoundError } from 'errors';
 
 import { attachPublicRoutes, attachPrivateRoutes } from './routes';
+import createGuestAccount from 'database/createGuestAccount';
 
 const establishDatabaseConnection = async (): Promise<void> => {
   try {
     await createDatabaseConnection();
+    await createGuestAccount();
   } catch (error) {
     console.log(error);
   }
@@ -35,12 +37,14 @@ const initializeExpress = (): void => {
   app.use('/', authenticateUser);
 
   attachPrivateRoutes(app);
-
   app.use((req, _res, next) => next(new RouteNotFoundError(req.originalUrl)));
   app.use(handleError);
 
   app.listen(PORT, () => {
     console.log(`Api is running on ${PORT}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️ NODE_ENV is development — make sure this is intentional!');
+    }
   });
 };
 

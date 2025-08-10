@@ -78,7 +78,8 @@ const ProjectBoard = forwardRef(({ currentProject, fetchProject, issueCreateModa
     );
   }
 
-  const { project } = projectData;
+  // const { projects } = projectData;
+  const { projects: [project] } = projectData;
 
   const presentProjectFilters = filters[project._id] || defaultFilters;
   const mergeCurrentProjectFilters = presentFilters => {

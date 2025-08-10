@@ -1,15 +1,15 @@
+/* eslint-disable func-names */
 import mongoose, { Document, Schema } from 'mongoose';
 import { ProjectCategory } from 'constants/projects';
 
-export interface BaseProject {
-  name: string;
-  url: string;
-  description: string;
-  category: ProjectCategory;
-}
-
 // eslint-disable-next-line @typescript-eslint/interface-name-prefix
-export interface IProject extends Document, BaseProject {
+export interface IProject extends Document {
+  name: string;
+  url?: string;
+  description?: string;
+  category: ProjectCategory;
+  createdAt: Date;
+  updatedAt: Date;
   issues: mongoose.Types.ObjectId[];
   users: mongoose.Types.ObjectId[];
 }
@@ -56,7 +56,7 @@ ProjectSchema.pre('deleteMany', async function deleteRelatedIssues(next) {
     next();
   } catch (error) {
     console.error('Error deleting related issues:', error);
-    next(error);
+    next(error as Error);
   }
 });
 

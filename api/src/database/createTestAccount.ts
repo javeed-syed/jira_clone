@@ -10,13 +10,10 @@ import {
   IProject,
   IIssue,
   IComment,
-  BaseUser,
-  BaseIssue,
-  BaseComment,
 } from '../entities';
 
 const seedUsers = async (): Promise<IUser[]> => {
-  const users = TestData.users.map((userData: BaseUser) => new User(userData));
+  const users = TestData.users.map((userData) => new User(userData));
   const savedUsers = await User.insertMany(users);
   return savedUsers;
 };
@@ -32,7 +29,7 @@ const seedProject = async (users: IUser[]): Promise<IProject> => {
 };
 
 const seedIssues = async (project: IProject, users: IUser[]): Promise<IIssue[]> => {
-  const issues = TestData.issues.map((issueData: BaseIssue, index: number) => {
+  const issues = TestData.issues.map((issueData, index: number) => {
     const reporterId = users[0]._id;
     const assignees = index === 2 ? [users[0]._id, users[1]._id] : [users[0]._id];
 
@@ -50,7 +47,7 @@ const seedIssues = async (project: IProject, users: IUser[]): Promise<IIssue[]> 
 
 // Seed Comments
 const seedComments = async (issues: IIssue[], users: IUser[]): Promise<IComment[]> => {
-  const comments = TestData.comments.map((commentData: BaseComment) => {
+  const comments = TestData.comments.map((commentData) => {
     return new Comment({
       ...commentData,
       issue: issues[0]._id,

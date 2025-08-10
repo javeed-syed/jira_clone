@@ -3,10 +3,11 @@
 import { IProject, Project, User, Comment } from 'entities';
 import bcrypt from 'bcrypt';
 import { BadUserInputError, CustomError, catchErrors } from 'errors';
-import { signToken } from 'utils/authToken';
+import { signToken, verifyToken } from 'utils/authToken';
 import { sendMail } from 'utils/mailer';
 import mongoose from 'mongoose';
-import { newAccountTemplate } from 'utils/mailTemplates';
+import { newAccountTemplate, resetPasswordTemplate } from 'utils/mailTemplates';
+import { FRONT_END_URLS } from 'constants/urls';
 
 export const getCurrentUser = catchErrors((req, res) => {
   res.respond({ currentUser: req.currentUser });
@@ -17,7 +18,8 @@ const hashPassword = async (password: string, saltRounds: number): Promise<strin
 };
 
 const checkPassword = async (password: string, hash: string): Promise<boolean> => {
-  const match = await bcrypt.compare(password, hash);
+  const match = password === hash;
+  // const match = await bcrypt.compare(password, hash);
   return match;
 };
 
@@ -110,17 +112,11 @@ export const login = catchErrors(async (req, res) => {
   if (!email) {
     throw new BadUserInputError({ email: 'Email not provided' });
   }
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).select('+password');
   if (!user) {
-    const user = await User.create({
-      email: req.body.email,
-      name: req.body.email,
-      password: await hashPassword(req.body.password, 10),
-    });
-    res.respond({ authToken: signToken({ sub: user._id }) });
-    return;
-    // throw new BadUserInputError({ email: 'email not found' });
+    throw new BadUserInputError({ email: 'email not found' });
   }
+  console.log(email, user.password, req.body.password);
   const match = await checkPassword(req.body.password, user.password);
   if (!match) {
     throw new CustomError('incorrect credentials', 403, 403);
@@ -179,3 +175,34 @@ export const editUser = catchErrors(async (req, res) => {
   });
 });
 
+export const forgetPassword = catchErrors(async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    throw new BadUserInputError({ email: 'Email not provided' });
+  }
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new BadUserInputError({ email: 'Email not found' })
+  }
+  const resetToken = signToken({ email: email }, undefined, 300)
+  const urlLink = FRONT_END_URLS.forgetPasswordUrl(resetToken);
+  const mail = resetPasswordTemplate(user.name, urlLink);
+  try {
+    await sendMail(email, mail.subject, mail.body)
+    res.respond({ message: "Reset Password Mail is sent" })
+  } catch (error) {
+    res.respond({ message: error })
+  }
+})
+
+export const resetPassword = catchErrors(async (req, res) => {
+  const { password, token } = req.body;
+  try {
+    const { email } = verifyToken(token);
+    const hashedPassword = await hashPassword(password, 10)
+    await User.findOneAndUpdate({ email: email }, { password: hashedPassword }, { new: true });
+    res.respond({ message: "Password reseted, Login with your new credentials" })
+  } catch (error) {
+    res.respond({ message: error })
+  }
+})

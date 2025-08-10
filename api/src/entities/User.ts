@@ -1,16 +1,14 @@
-/* eslint-disable no-underscore-dangle */
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface BaseUser {
-  email: string;
-  name: string;
-  avatarUrl: string;
-  password: string;
-  isAdmin: boolean;
-}
-
 // eslint-disable-next-line @typescript-eslint/interface-name-prefix
-export interface IUser extends Document, BaseUser {
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  avatarUrl: string;
+  isAdmin: boolean;
+  password: string;
+  createdAt: Date;
+  updatedAt: Date;
   comments: mongoose.Types.ObjectId[];
   issues: mongoose.Types.ObjectId[];
   projects: mongoose.Types.ObjectId[];
@@ -32,8 +30,17 @@ const UserSchema: Schema = new Schema(
         validator(value: string): boolean {
           return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
         },
-        message: 'Invalid email address format',
+        message: 'Invalid email format',
       },
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+      // You can add custom validation for email if needed
+    },
+    password: {
+      type: String,
+      required: true,
     },
     avatarUrl: {
       type: String,
@@ -57,15 +64,6 @@ const UserSchema: Schema = new Schema(
         ref: 'Project',
       },
     ],
-    isAdmin: {
-      type: Boolean,
-      default: false,
-    },
-    password: {
-      type: String,
-      required: true,
-      select: false
-    },
   },
   {
     timestamps: true,
@@ -83,7 +81,7 @@ UserSchema.pre('deleteMany', async function deleteIssuesAndComments(next): Promi
     next();
   } catch (error) {
     console.error('Error deleting related issues and comments:', error);
-    next(error);
+    next(error as Error);
   }
 });
 
